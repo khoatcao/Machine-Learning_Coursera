@@ -96,3 +96,4 @@ print(X_train)
 print(X_valid_scaled)
 
 
+lfaj    skfajsfkajfkasjfsahfaksfhsakfhsaf

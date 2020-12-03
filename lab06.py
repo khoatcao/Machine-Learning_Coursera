@@ -95,6 +95,7 @@ X_train_scaled,X_valid_scaled = normaliza_data(X_train,y_train,StandardScaler)
 print(X_train)
 print(X_valid_scaled)
 
-
-lfaj    skfajsfkajfkasjfsahfaksfhsakfhsaf
-kashfsafhasfhsafjahsjasfjsafasfjsahfjsafhsajf
+fasfashfjsahfsajfhasjnbjansfoiasfjosaicjsaoicjascosafuasfjaiofshash
+alsjkfjaskfnasfnas
+kfnasfknasfknsaf
+kfkasfnaskfnasfsaf

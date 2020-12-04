@@ -1,9 +1,12 @@
 ### It equals one for unsatisfied customers and 0 for satisfied customers 
+import seaborn as sns
+import csv 
 import pandas as pd 
 import numpy as np 
 import matplotlib.pyplot as plt 
 from sklearn.model_selection import train_test_split 
 from sklearn.preprocessing import StandardScaler
+from sklearn import preprocessing
 path_train = ('/home/khoacao/Desktop/dataset/lab06/train.csv')
 path_test = ('/home/khoacao/Desktop/dataset/lab06/test.csv') 
 df_train = pd.read_csv(path_train)
@@ -42,60 +45,127 @@ print(mis_test)
 print(pd.set_option('display.max_columns',None))
 
 def target_variable(df_train) : 
-    # target
+     #target
+    figure = plt.figure(figsize = (10,5)) 
     target = df_train.TARGET
-    # value_counts
     val_count = target.value_counts(ascending = True)
-
+    sns.set_theme(style="darkgrid") 
+    sns.countplot(x = 'TARGET',data = df_train)
+    plt.xlabel("Target")
+    plt.ylabel("values")
+    plt.title("Visualize target")
+    plt.legend()
+    plt.show()     
+    plt.savefig('countplot.png')
     return val_count 
-
-val_count = target_variable(df_train)
-
-print(val_count) 
+print(target_variable(df_train)) 
 print("The total amount of unstatisfied customers nearly 30010")
 print("The total amount of statisfied customer are 73012") 
 
 def format_target(df_train) : 
     # label
-    X = df_train.iloc[:,:-1]
-    y = df_train.TARGET 
-    
+    X = df_train.drop('TARGET',axis = 1)
+    y = df_train.TARGET.values   
     return X,y 
 X,y = format_target(df_train)
 print(X)
 print(y)
+### Applying oversampling and undersampling ############ 
+from imblearn.under_sampling import RandomUnderSampler
+from imblearn.over_sampling import SMOTE
+#######################################################
+def format_target(RandomUnderSampler,SMOTE,X,y):
+    under = RandomUnderSampler(sampling_strategy = 0.2)
+    X_under,y_under = under.fit_resample(X,y)
+    X_train,X_test,y_train,y_test = train_test_split(X_under,y_under,test_size = 0.2, random_state = 0)
 
-def format_data(X,y) : 
-    X_train,X_test,y_train,y_test = train_test_split(X,y,test_size = 0.15) 
-    return X_train,X_test,y_train,y_test
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled  = scaler.transform(X_test) 
 
-X_train,X_test,y_train,y_test = format_data(X,y)
-print(len(X_train.columns))
-print(len(X_test.columns))
-print(len(y_train))
-print(len(y_test))
-print("Write a function to split training set to another valid set ")
-def format_valid(X_train,y_train) :
-    X_train,X_valid,y_train,y_valid = train_test_split(X_train,y_train,test_size = 0.18, random_state = 43,shuffle = True)
+    df_test_scaled = scaler.transform(df_test)
     
-    return X_train,X_valid,y_train,y_valid 
+    oversample = SMOTE(random_state = 2020)
+    X_sm_train,y_sm_train = oversample.fit_resample(X_train_scaled,y_train) 
+    
+    return X_sm_train,y_sm_train,X_test_scaled, df_test_scaled,y_test  
+X_sm_train, y_sm_train,X_test_scaled, df_test_scaled, y_test = format_target(RandomUnderSampler,SMOTE,X,y)
+print(X_sm_train)
+print(y_sm_train)
+print(df_test_scaled) 
+print(X_test_scaled) 
+print(y_test) 
+### Applying dimension reduction #### 
 
-X_train,X_valid,y_train,y_valid = format_valid(X_train,y_train)
+from sklearn.decomposition import PCA
 
-print(len(X_train))
-print((X_valid.columns))
-def normaliza_data(X_train,X_valid,StandardScaler) :
-    std = StandardScaler()
-    X_train_scaled = std.fit_transform(X_train) 
-    X_valid_scaled = std.transform(X_valid)
-    return X_train_scaled,X_valid_scaled 
+def PCA_dimentional(PCA,X_sm_train,X_test_scaled,df_test_scaled):  
+    pca = PCA(n_components= 10)
+    X_train_pca  = pca.fit_transform(X_sm_train) 
+    df_test_pca  = pca.transform(df_test_scaled) 
+    X_test_pca = pca.fit_transform(X_test_scaled)  
 
-X_train_scaled,X_valid_scaled = normaliza_data(X_train,y_train,StandardScaler) 
+    return X_train_pca, X_test_pca, df_test_pca   
 
-print(X_train)
-print(X_valid_scaled)
+X_train_pca,X_test_pca,df_test_pca = PCA_dimentional(PCA,X_sm_train,X_test_scaled,df_test_scaled) 
 
-fasfashfjsahfsajfhasjnbjansfoiasfjosaicjsaoicjascosafuasfjaiofshash
-alsjkfjaskfnasfnas
-kfnasfknasfknsaf
-kfkasfnaskfnasfsaf
+
+PCA_list = [X_train_pca,X_test_pca,df_test_pca] 
+
+for i in PCA_list : 
+    if True : 
+        print(i) 
+# model with sklearn
+from sklearn.metrics import classification_report
+from sklearn import metrics
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier 
+from sklearn.tree import DecisionTreeClassifier 
+from sklearn.svm import SVC  
+from sklearn.neural_network import MLPClassifier
+# metrics 
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import confusion_matrix 
+from sklearn.metrics import plot_confusion_matrix
+def evaluate(X_train_pca,y_sm_train,X_test_pca,df_test_pca) :
+    
+    list_models = ["LogisticRegression","KNN","DecisionTree",'RandomForestClassifier',"MLPClassifier"]
+    
+    # declare model
+    model1 = LogisticRegression(solver='lbfgs',class_weight='balanced',max_iter=10000)
+    model3 = KNeighborsClassifier()
+    model4 = DecisionTreeClassifier()
+    model5 = MLPClassifier(solver='adam', 
+                    activation="relu",
+                    # alpha=1e-5,
+                    learning_rate="adaptive",
+                    learning_rate_init=0.001,
+                    hidden_layer_sizes=(100), 
+                    max_iter=100,
+                    tol=0.001,
+                    random_state=1,
+                    verbose=True) 
+
+    ## result model
+    #results = pd.DataFrame(cols = ['cross_val'], index = list_models) 
+
+    ## fit ## 
+    for i,model in enumerate([model1,model3,model4,model5]): 
+        model.fit(X_train_pca,y_sm_train)
+        predictions = model.predict(X_test_pca)      
+    ### metrics ##
+        print("Metrics Accuracy",metrics.accuracy_score(y_test,predictions)*100.0)
+        print(classification_report(y_test,predictions))
+        print(confusion_matrix(y_test,predictions))
+        #print(predictions)
+        # work with test set and choose the best model to work with 
+        if model == model5 : 
+          result = model.predict(df_test_pca)
+          print(result[:75818])
+          data  = pd.DataFrame({"ID":df_test["ID"],"TARGET":result[:75818]})
+          data.to_csv("Submission.csv",index = False)
+#X_train_pca,y_sm_train,X_test_pca,df_test_pca = evaluate(X_train_pca,y_sm_train,X_test_pca,df_test_pca) 
+print( evaluate(X_train_pca,y_sm_train,X_test_pca,df_test_pca))
+
+
+
